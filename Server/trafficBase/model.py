@@ -5,37 +5,31 @@ from agent import *
 import json
 
 class CityModel(Model):
-    """ 
-        Creates a model based on a city map.
-
-        Args:
-            N: Number of agents in the simulation
-    """
-    def __init__(self, N):
-
-        # Load the map dictionary. The dictionary maps the characters in the map file to the corresponding agent.
+    def __init__(self):
+        # Cargar el diccionario del mapa
         dataDictionary = json.load(open("city_files/mapDictionary.json"))
-
         self.traffic_lights = []
 
-        # Load the map file. The map file is a text file where each character represents an agent.
-        with open('city_files/2022_base.txt') as baseFile:
+        # Cargar el archivo de mapa
+        with open('city_files/2023_base.txt') as baseFile:
             lines = baseFile.readlines()
-            self.width = len(lines[0])-1
+            self.width = len(lines[0]) - 1
             self.height = len(lines)
 
-            self.grid = MultiGrid(self.width, self.height, torus = False) 
+            self.grid = MultiGrid(self.width, self.height, torus=False) 
             self.schedule = RandomActivation(self)
 
-            # Goes through each character in the map file and creates the corresponding agent.
+            # Creación de agentes según el mapa
             for r, row in enumerate(lines):
                 for c, col in enumerate(row):
                     if col in ["v", "^", ">", "<"]:
-                        agent = Road(f"r_{r*self.width+c}", self, dataDictionary[col])
+                        direction = dataDictionary[col]
+                        agent = Road(f"r_{r*self.width+c}", self, direction)
                         self.grid.place_agent(agent, (c, self.height - r - 1))
 
                     elif col in ["S", "s"]:
-                        agent = Traffic_Light(f"tl_{r*self.width+c}", self, False if col == "S" else True, int(dataDictionary[col]))
+                        time_to_change = dataDictionary[col]
+                        agent = Traffic_Light(f"tl_{r*self.width+c}", self, state=(col == "s"), timeToChange=time_to_change)
                         self.grid.place_agent(agent, (c, self.height - r - 1))
                         self.schedule.add(agent)
                         self.traffic_lights.append(agent)
@@ -48,9 +42,22 @@ class CityModel(Model):
                         agent = Destination(f"d_{r*self.width+c}", self)
                         self.grid.place_agent(agent, (c, self.height - r - 1))
 
-        self.num_agents = N
+        # Inicializar un coche en la esquina (0, 0)
+        car = Car("car_0", self)
+        self.grid.place_agent(car, (0, 0))  # Esquina inicial
+        self.schedule.add(car)
+
         self.running = True
+        self.car_counter = 1  # Contador para asignar IDs únicos a los coches
 
     def step(self):
-        '''Advance the model by one step.'''
+        """Avanzar la simulación un paso.
+        # Crear un nuevo coche cada 15 pasos
+        if self.schedule.steps % 15 == 0:
+            new_car = Car(f"car_{self.car_counter}", self)
+            self.grid.place_agent(new_car, (0, 0))  # Posición inicial del coche
+            self.schedule.add(new_car)
+            self.car_counter += 1
+"""
+        # Ejecutar el siguiente paso de todos los agentes
         self.schedule.step()
