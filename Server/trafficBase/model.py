@@ -73,3 +73,4 @@ class CityModel(Model):
 """
         # Ejecutar el siguiente paso de todos los agentes
         self.schedule.step()
+        

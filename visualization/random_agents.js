@@ -74,6 +74,7 @@ async function main() {
     drawScene(bufferInfo); // Render the scene
 }
 
+
 // Fetch map layout
 async function fetchMapLayout() {
     try {
