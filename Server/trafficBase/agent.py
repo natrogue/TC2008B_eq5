@@ -1,6 +1,7 @@
 from mesa import Agent
+import math
+import heapq # Para usar la cola de prioridad en algoritmo a estrella
 import random
-from math import sqrt
 
 class Car(Agent):
     """
@@ -8,59 +9,41 @@ class Car(Agent):
     """
     def __init__(self, unique_id, model, goal):
         super().__init__(unique_id, model)
-        self.current_direction = None  # Almacena la dirección actual del Car
-        self.steps_in_direction = 0  # Número de celdas recorridas en la dirección actual
-
-    def get_neighbors(self):
-        """
-        Get the neighbors of the agent in the grid.
-        Returns a dictionary with neighbor positions and their contents.
-        """
-        current_position = self.pos
-
-        neighbor_positions = self.model.grid.get_neighborhood(
-            current_position,
-            moore=False,  # Solo vecinos ortogonales
-            include_center=False
-        )
-
-        neighbors = {
-            position: self.model.grid.get_cell_list_contents(position)
-            for position in neighbor_positions
-        }
-
-        return neighbors
-
-    def _get_next_position(self, current_position, direction):
-        """
-        Get the next position based on the current direction.
-        """
-        if direction == "Left":
-            return (current_position[0] - 1, current_position[1])
-        elif direction == "Right":
-            return (current_position[0] + 1, current_position[1])
-        elif direction == "Up":
-            return (current_position[0], current_position[1] + 1)
-        elif direction == "Down":
-            return (current_position[0], current_position[1] - 1)
-        return current_position  # Dirección inválida
-
-    def _distance_to_destination(self, position):
-        """
-        Calculate the Euclidean distance from a position to the destination.
-        """
-        if not self.destination:
-            return float("inf")
-        dest_x, dest_y = self.destination
-        pos_x, pos_y = position
-        return sqrt((dest_x - pos_x) ** 2 + (dest_y - pos_y) ** 2)
+        self.goal = goal
 
     def move(self):
         """
         Moves the agent based on road direction, traffic light state, and logic for intersections.
         """
-        if not self.destination:
-            return  # Si no tiene destino, no se mueve
+        path = self.a_star(self.model.graph, self.pos, self.goal)
+
+        if path is None:
+            return
+        if len(path) > 2:
+            next_move = path[1]
+        else:
+            self.model.grid.remove_agent(self)
+            self.model.schedule.remove(self)
+            return
+        
+        next_move = self.checkNextMoveIsNotCar(next_move)
+        next_move = self.checkTrafficLight(next_move)
+
+        self.model.grid.move_agent(self, next_move)
+
+    def checkNextMoveIsNotCar(self, next_move):
+        agent = self.model.getPosAgent(next_move, Car)
+        if agent:
+            alternative_moves = [move for move in self.model.graph[self.pos] if move != next_move and self.model.getPosAgent(move, Car)]
+            if alternative_moves:
+                move = random.choice(alternative_moves)
+                self.model.grid.move_agent(self, move)
+                return move
+            else:
+                return self.pos
+        return next_move
+
+
 
         current_position = self.pos
         current_cell = self.model.grid.get_cell_list_contents(current_position)
