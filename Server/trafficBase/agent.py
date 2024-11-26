@@ -3,6 +3,8 @@ import math
 import heapq # Para usar la cola de prioridad en algoritmo a estrella
 import random
 
+# solo car y trafficLight se van a ir actualizando, los demás agentes no necesitan 'step'
+
 class Car(Agent):
     """
     Agent that moves based on road direction, respects traffic lights, and moves toward its assigned destination.
@@ -58,6 +60,7 @@ class Car(Agent):
     def step(self):
         self.move()
 
+    # a estrella se encarga de encontrar el camino más corto entre inicio - destino
     def a_estrella(self, graph, start, goal):
         open_set = [(0, start)]
         closed_set = set()
@@ -82,8 +85,16 @@ class Car(Agent):
                 if neighbor in closed_set:
                     continue
                 tentative_g_score = g_scores[current_node]+1
-                
-                heapq.heappush(open_set, (f_score, neighbor))
+
+                if tentative_g_score < g_scores[neighbor]:
+                    parents[neighbor] = current_node
+                    g_scores[neighbor] = tentative_g_score
+
+                    h_score = self.euclidean_distance(neighbor, goal)
+
+                    f_score = tentative_g_score + h_score
+
+                    heapq.heappush(open_set, (f_score, neighbor))
         
         return None
     
@@ -102,31 +113,33 @@ class Traffic_Light(Agent):
         super().__init__(unique_id, model)
         """
         Creates a new Traffic light.
-        Args:
-            unique_id: The agent's ID
-            model: Model reference for the agent
-            state: Whether the traffic light is green or red
-            timeToChange: After how many step should the traffic light change color 
         """
         self.state = state
         self.timeToChange = timeToChange
+        self.unique_id = unique_id
 
     def step(self):
         """ 
         To change the state (green or red) of the traffic light in case you consider the time to change of each traffic light.
         """
-        if self.model.schedule.steps % self.timeToChange == 0:
+        traffic_count = self.model.count_traffic_around_light(self.pos)
+
+        traffic_time_change = 3
+        time_space_to_change = 8
+
+        if traffic_count >= traffic_time_change or self.model.schedule.steps % time_space_to_change == 0:
             self.state = not self.state
+
 
 class Destination(Agent):
     """
-    Destination agent. Where each car should go.
+    Where each car goes, it's the goal of the agent.
     """
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
 
     def step(self):
-        pass
+        pass # nothing to change or do
 
 class Obstacle(Agent):
     """
@@ -136,7 +149,7 @@ class Obstacle(Agent):
         super().__init__(unique_id, model)
 
     def step(self):
-        pass
+        pass # nothing to change or do
 
 class Road(Agent):
     """

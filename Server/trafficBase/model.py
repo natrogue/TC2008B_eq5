@@ -3,12 +3,30 @@ from mesa.time import RandomActivation
 from mesa.space import MultiGrid
 from agent import *
 import json
+import random
 
 class CityModel(Model):
+    def count_traffic_around_light(self, traffic_light_position):
+        neighborhood = self.grid.get_neighborhood(traffic_light_position, 
+            moore=True, include_center=False)
+        
+        car_count = 0
+
+        for pos in neighborhood:
+            agents = self.grid.get_cell_list_contents([pos])
+            car_count += sum(isinstance(agent, Car) for agent in agents)
+        
+        return car_count
+
+
     def __init__(self):
         # Inicializa la lista de destinos
         self.destinations = []  # Lista para guardar posiciones de los destinos
         self.traffic_lights = []  # Lista para los semáforos
+        self.max_agents = 10 # Número máximo de agentes en la simulación
+        self.graph = {}
+        self.agent_count = 0
+        self.step_count = 0
 
         # Cargar el diccionario del mapa
         dataDictionary = json.load(open("city_files/mapDictionary.json"))
@@ -29,10 +47,17 @@ class CityModel(Model):
                         direction = dataDictionary[col]
                         agent = Road(f"r_{r*self.width+c}", self, direction)
                         self.grid.place_agent(agent, (c, self.height - r - 1))
+                        edge = self.getFirstConnectedNode(dataDictionary[col], c, self.height - r - 1)
+
+                        if edge:
+                            self.graph[(c, self.height - r - 1)] = [edge]
+                        else:
+                            self.graph[(c, self.height - r - 1)] = []
 
                     elif col in ["S", "s"]:
                         time_to_change = dataDictionary[col]
-                        agent = Traffic_Light(f"tl_{r*self.width+c}", self, state=(col == "s"), timeToChange=time_to_change)
+                        agent = Traffic_Light(f"S_{r*self.width+c}", self, 
+                                              False if col == "S" else True, int(time_to_change))
                         self.grid.place_agent(agent, (c, self.height - r - 1))
                         self.schedule.add(agent)
                         self.traffic_lights.append(agent)
