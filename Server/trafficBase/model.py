@@ -6,9 +6,12 @@ import json
 
 class CityModel(Model):
     def __init__(self):
+        # Inicializa la lista de destinos
+        self.destinations = []  # Lista para guardar posiciones de los destinos
+        self.traffic_lights = []  # Lista para los semáforos
+
         # Cargar el diccionario del mapa
         dataDictionary = json.load(open("city_files/mapDictionary.json"))
-        self.traffic_lights = []
 
         # Cargar el archivo de mapa
         with open('city_files/2023_base.txt') as baseFile:
@@ -16,7 +19,7 @@ class CityModel(Model):
             self.width = len(lines[0]) - 1
             self.height = len(lines)
 
-            self.grid = MultiGrid(self.width, self.height, torus=False) 
+            self.grid = MultiGrid(self.width, self.height, torus=False)
             self.schedule = RandomActivation(self)
 
             # Creación de agentes según el mapa
@@ -39,16 +42,25 @@ class CityModel(Model):
                         self.grid.place_agent(agent, (c, self.height - r - 1))
 
                     elif col == "D":
+                        position = (c, self.height - r - 1)
                         agent = Destination(f"d_{r*self.width+c}", self)
-                        self.grid.place_agent(agent, (c, self.height - r - 1))
+                        self.grid.place_agent(agent, position)
+                        self.destinations.append(position)  # Agregar posición del destino a la lista
 
-        # Inicializar un coche en la esquina (0, 0)
+
+        print(f"Lista de posiciones de destinos: {self.destinations}")
+
+
+        # Inicializar un coche con un destino aleatorio
         car = Car("car_0", self)
-        self.grid.place_agent(car, (0, 0))  # Esquina inicial
+        car.destination = random.choice(self.destinations)  # Asignar destino aleatorio
+        print(f"Destino asignado al coche {car.unique_id}: {car.destination}")  # Mostrar destino en la consola
+        self.grid.place_agent(car, (0, 0))  # Posición inicial
         self.schedule.add(car)
 
         self.running = True
         self.car_counter = 1  # Contador para asignar IDs únicos a los coches
+
 
     def step(self):
         """Avanzar la simulación un paso.
