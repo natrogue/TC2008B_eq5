@@ -72,8 +72,14 @@ async function main() {
 
     programInfo = twgl.createProgramInfo(gl, [vsGLSL, fsGLSL]);
 
- agentArrays = generateData(1);
-  obstacleArrays = generateObstacleData(1);
+    try {
+        // load obj
+        const objData = await loadObjFromFile("objs/traffic_light.obj");
+        agentArrays = parseOBJ(objData);
+    } catch (error) {
+        console.error("Failed to load OBJ file:", error);
+        return;
+    }
 
   // Create buffer information from the agent and obstacle data
   agentsBufferInfo = twgl.createBufferInfoFromArrays(gl, agentArrays);
