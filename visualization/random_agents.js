@@ -169,6 +169,11 @@ async function getCars() {
                     const currentCar = cars.find((object3d) => object3d.id === car.id);
                     if (currentCar !== undefined) {
                         currentCar.position = [car.x, car.y, car.z];
+                    } else {
+                        for (const car of result.positions) {
+                            const newCar = new Object3D(car.id, [car.x, car.y, car.z]);
+                            cars.push(newCar);
+                        }
                     }
                 }
             }
@@ -193,9 +198,9 @@ async function getTraffic_Light() {
                 console.log("trafficLights:", trafficLights);
             } else {
                 for (const trafficLight of result.positions) {
-                    const currenttrafficLight = cars.find((object3d) => object3d.id === trafficLight.id);
-                    if (currenttrafficLight !== undefined) {
-                        currenttrafficLight.position = [trafficLight.x, trafficLight.y, trafficLight.z];
+                    const currentTrafficLight = trafficLights.find((object3d) => object3d.id === trafficLight.id);
+                    if (currentTrafficLight !== undefined) {
+                        currentTrafficLight.position = [trafficLight.x, trafficLight.y, trafficLight.z];
                     }
                 }
             }
