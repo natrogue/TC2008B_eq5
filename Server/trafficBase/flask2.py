@@ -17,7 +17,7 @@ currentStep = 0
 
 # This application will be used to interact with WebGL
 app = Flask("Traffic example")
-cors = CORS(app, origins=['http://localhost:8585/'])
+cors = CORS(app, origins=['http://localhost:8585'])
 
 # This route will be used to send the parameters of the simulation to the server.
 # The servers expects a POST request with the parameters in a.json.
