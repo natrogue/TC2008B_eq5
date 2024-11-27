@@ -5,16 +5,18 @@ from mesa.visualization import ModularServer
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 
+
 # Parameters
 number_agents = 10
 width = 25
 height = 25
 city_model = None  # Instance of CityModel
 currentStep = 0
+city_model_instance = None
 
 # Flask app setup
 app = Flask("Traffic Example")
-cors = CORS(app, origins=['http://localhost', 'http://localhost:8585'])
+CORS(app, resources={r"/*": {"origins": "http://localhost:8585"}})
 
 # @app.route('/init', methods=['POST'])
 # @cross_origin()
@@ -40,10 +42,10 @@ cors = CORS(app, origins=['http://localhost', 'http://localhost:8585'])
 @app.route("/init", methods=['POST'])
 @cross_origin()
 def initModel():
-    global currentStep, CityModel
+    global currentStep, city_model_instance
     if request.method == 'POST':
         currentStep = 0
-        CityModel = CityModel()
+        city_model_instance = CityModel()
 
         return jsonify({"message": "Default parameters recieved, model initiated."})
 
@@ -107,9 +109,9 @@ def getAgents():
 @app.route("/update", methods=['GET'])
 @cross_origin()
 def updateModel():
-    global currentStep, CityModel
+    global currentStep, city_model_instance
     if request.method == 'GET':
-        CityModel.step()
+        city_model_instance.step()
         currentStep += 1
         print(currentStep, "Update Number")
         return jsonify(
