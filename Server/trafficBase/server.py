@@ -12,8 +12,8 @@ cors=CORS(app, resources={r"/*": {"origins": "http://localhost:8585"}})
 
 # Parameters
 number_agents = 10
-width = 25
-height = 25
+width = 30
+height = 30
 city_model = None  # Instance of CityModel
 currentStep = 0
 

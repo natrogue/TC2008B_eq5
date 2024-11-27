@@ -188,6 +188,7 @@ async function getTraffic_Light() {
             if (trafficLights.length === 0) { // Cambiado de agents a cars
                 for (const traffic_light of result.positions) {
                     const newtrafficLights = new Object3D(traffic_light.id, [traffic_light.x, traffic_light.y, traffic_light.z]);
+                    newtrafficLight.state = traffic_light.state;
                     trafficLights.push(newtrafficLights);
                 }
                 console.log("trafficLights:", trafficLights);
@@ -196,6 +197,7 @@ async function getTraffic_Light() {
                     const currenttrafficLight = cars.find((object3d) => object3d.id === trafficLight.id);
                     if (currenttrafficLight !== undefined) {
                         currenttrafficLight.position = [trafficLight.x, trafficLight.y, trafficLight.z];
+                        currenttrafficLight.state = trafficLight.state;
                     }
                 }
             }
@@ -303,7 +305,7 @@ function drawCars(distance, carVao, carBufferInfo, viewProjectionMatrix){
     }
     }
 
-function drawTraffic_Light(distance, trafficLightVao, carBufferInfo, viewProjectionMatrix){
+function drawTraffic_Light(distance, trafficLightVao, carBufferInfo, trafficLightBufferInfo, viewProjectionMatrix){
     gl.bindVertexArray(trafficLightVao);
     for(const trafficLight of trafficLights){
       const cube_trans = twgl.v3.create(...trafficLight.position);
@@ -316,15 +318,22 @@ function drawTraffic_Light(distance, trafficLightVao, carBufferInfo, viewProject
       trafficLight.matrix = twgl.m4.rotateZ(trafficLight.matrix, trafficLight.rotation[2]);
       //car.matrix = twgl.m4.scale(car.matrix, car_scale);
 
+      let color;
+      if (trafficLight.state === "red"){
+        color = [1,0,0,1];
+      } else if (trafficLight.state === "green"){
+        color = [1,1,0,1];
+      }
+
       // Set the uniforms for the agent
       let uniforms = {
           u_matrix: trafficLight.matrix,
-          u_color: [0,0,1,1]
+          u_color: color
       }
 
       // Set the uniforms and draw the agent
       twgl.setUniforms(programInfo, uniforms);
-      twgl.drawBufferInfo(gl, carBufferInfo);
+      twgl.drawBufferInfo(gl, trafficLightBufferInfo);
       
     }
     }
