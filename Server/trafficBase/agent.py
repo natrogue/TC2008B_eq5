@@ -1,223 +1,151 @@
 from mesa import Agent
 import random
-from math import sqrt
+import heapq
+import math
+from random import choice
 
 class Car(Agent):
     """
-    Agent that moves based on road direction, respects traffic lights, and moves toward its assigned destination.
+    Agent that moves randomly.
+    Attributes:
+        unique_id: Agent's ID
+        direction: Randomly chosen direction chosen from one of eight directions
     """
-    def __init__(self, unique_id, model):
+
+    def __init__(self, unique_id, model, goal):
+        """
+        Creates a new random agent.
+        Args:
+            unique_id: The agent's ID
+            model: Model reference for the agent
+        """
         super().__init__(unique_id, model)
-        self.current_direction = None
-        self.steps_in_direction = 0
-        self.destination = None  # Destino asignado
-
-    def get_neighbors(self):
-        """
-        Get the neighbors of the agent in the grid.
-        Returns a dictionary with neighbor positions and their contents.
-        """
-        current_position = self.pos
-
-        neighbor_positions = self.model.grid.get_neighborhood(
-            current_position,
-            moore=False,  # Solo vecinos ortogonales
-            include_center=False
-        )
-
-        neighbors = {
-            position: self.model.grid.get_cell_list_contents(position)
-            for position in neighbor_positions
-        }
-
-        return neighbors
-
-    def _get_next_position(self, current_position, direction):
-        """
-        Get the next position based on the current direction.
-        """
-        if direction == "Left":
-            return (current_position[0] - 1, current_position[1])
-        elif direction == "Right":
-            return (current_position[0] + 1, current_position[1])
-        elif direction == "Up":
-            return (current_position[0], current_position[1] + 1)
-        elif direction == "Down":
-            return (current_position[0], current_position[1] - 1)
-        return current_position  # Dirección inválida
-
-    def _distance_to_destination(self, position):
-        """
-        Calculate the Euclidean distance from a position to the destination.
-        """
-        if not self.destination:
-            return float("inf")
-        dest_x, dest_y = self.destination
-        pos_x, pos_y = position
-        return sqrt((dest_x - pos_x) ** 2 + (dest_y - pos_y) ** 2)
+        self.goal = goal
+        self.color = f"#{''.join(choice('0123456789ABCDEF') for _ in range(6))}"
 
     def move(self):
         """
-        Moves the agent based on road direction, traffic light state, and logic for intersections.
+        Determines if the agent can move in the direction that was chosen
         """
-        if not self.destination:
-            return  # Si no tiene destino, no se mueve
+        # Check that the agent in possible_steps are rooads and get the direction of the road
 
-        current_position = self.pos
-        neighbors = self.get_neighbors()
+        path = aStar(self.model.graph, self.pos, self.goal)
 
-        # Obtener posibles movimientos
-        possible_moves = []
-        for position, agents in neighbors.items():
-            road_agent = next((agent for agent in agents if isinstance(agent, Road)), None)
-            car_agent = next((agent for agent in agents if isinstance(agent, Car)), None)
-            obstacle_agent = next((agent for agent in agents if isinstance(agent, Obstacle)), None)
-
-            # Considerar solo celdas que sean carreteras, no ocupadas por coches ni obstáculos
-            if road_agent and not car_agent and not obstacle_agent:
-                distance = self._distance_to_destination(position)
-                possible_moves.append((position, road_agent.direction, distance))
-
-        # Si no hay movimientos posibles, no hace nada
-        if not possible_moves:
+        if path == None:
+            return
+        if len(path) > 2:
+            next_move = path[1]
+        else:
+            self.model.grid.remove_agent(self)
+            self.model.schedule.remove(self)
             return
 
-        # Ordenar movimientos por distancia al destino (el más cercano primero)
-        possible_moves.sort(key=lambda x: x[2])
-        next_position, next_direction, _ = possible_moves[0]
+        # Check if the next move is a traffic light
+        next_move = self.checkNextMoveIsNotCar(next_move)
+        next_move = self.checkTrafficLight(next_move)
+        # Move the agent to next_move
+        self.model.grid.move_agent(self, next_move)
 
-        # Verificar semáforo en la celda de destino
-        next_cell = self.model.grid.get_cell_list_contents(next_position)
-        traffic_light = next((agent for agent in next_cell if isinstance(agent, Traffic_Light)), None)
+    def checkNextMoveIsNotCar(self, next_move):
+        """
+        Verifica si el próximo movimiento es hacia una posición ocupada por otro coche.
+        Si es así, busca una ruta alternativa o se detiene.
+        """
+        agent = self.model.getPosAgent(next_move, Car)
+        if agent:
+            # Intenta encontrar una ruta alternativa
+            alternative_moves = [move for move in self.model.graph[self.pos] if move != next_move and not self.model.getPosAgent(move, Car)]
+            if alternative_moves:
+                move = random.choice(alternative_moves)
+                self.model.grid.move_agent(self, move)
+                return move
+            else:
+                return self.pos
+        return next_move
 
-        if traffic_light and not traffic_light.state:  # Semáforo en rojo
-            return
 
-        # Actualizar dirección actual y mover el coche
-        self.current_direction = next_direction
-        self.model.grid.move_agent(self, next_position)
-        self.steps_in_direction += 1
-
-        # Verificar si llegó al destino
-        if next_position == self.destination:
-            print(f"{self.unique_id} llegó a su destino: {self.destination}")
-            self.model.cars_to_remove.append(self)  # Notificar al modelo que debe eliminar este coche
+    def checkTrafficLight(self, next_move):
+        """
+        Checks if the next move is a traffic light
+        """
+        agent = self.model.getPosAgent(next_move, Traffic_Light)
+        if agent:
+            if agent.state:
+                # If it is green, move
+                self.model.grid.move_agent(self, next_move)
+                return next_move
+            else:
+                return self.pos
+        return next_move
 
     def step(self):
-        """
-        Determines the new direction it will take, and then moves.
-        """
         self.move()
-# # class Car(Agent):
-#     """
-#     Agent that moves based on road direction, respects traffic lights, and only changes direction
-#     when the neighboring road direction is different.
-#     """
-#     def __init__(self, unique_id, model):
-#         super().__init__(unique_id, model)
-#         self.current_direction = None  # Almacena la dirección actual del Car
 
-#     def get_neighbors(self):
-#         """
-#         Get the neighbors of the agent in the grid.
-#         Returns a dictionary with neighbor positions and their contents.
-#         """
-#         # Obtener la posición actual del agente
-#         current_position = self.pos
+    
+def aStar(graph, start, goal):
+    # Initialize the open and closed sets
+    open_set = [(0, start)]  # Priority queue of (f_score, node)
+    closed_set = set()
 
-#         # Obtener las celdas vecinas (moore=False para vecinos ortogonales)
-#         neighbor_positions = self.model.grid.get_neighborhood(
-#             current_position,
-#             moore=False,  # Solo vecinos ortogonales
-#             include_center=False
-#         )
+    # Initialize dictionaries to store g_scores and parents
+    g_scores = {node: float("inf") for node in graph}
+    g_scores[start] = 0
+    parents = {}
 
-#         # Crear un diccionario con las posiciones y el contenido de cada vecino
-#         neighbors = {
-#             position: self.model.grid.get_cell_list_contents(position)
-#             for position in neighbor_positions
-#         }
+    while open_set:
+        # Get the node with the lowest f_score from the open set
+        f_score, current_node = heapq.heappop(open_set)
 
-#         return neighbors
+        if current_node == goal:
+            # Reconstruct the path if the goal is reached
+            path = []
+            while current_node in parents:
+                path.insert(0, current_node)
+                current_node = parents[current_node]
+            path.insert(0, start)
+            return path
 
-#     def move(self):
-#         """
-#         Moves the agent based on road direction, traffic light state, and random choice at intersections.
-#         Only changes direction if a neighboring road direction is different.
-#         """
-#         # Obtener la posición actual
-#         current_position = self.pos
+        closed_set.add(current_node)
 
-#         # Obtener el contenido de la celda actual
-#         current_cell = self.model.grid.get_cell_list_contents(current_position)
-#         road = next((agent for agent in current_cell if isinstance(agent, Road)), None)
+        for neighbor in graph[current_node]:
+            if neighbor in closed_set:
+                continue  # Skip already evaluated nodes
 
-#         # Si está sobre una carretera, actualiza la dirección actual
-#         if road:
-#             if self.current_direction is None:
-#                 self.current_direction = road.direction
-#             elif self.current_direction != road.direction:
-#                 self.current_direction = road.direction
+            # Calculate the tentative g_score
+            tentative_g_score = (
+                g_scores[current_node] + 1
+            )  # Assuming all edge weights are 1
 
-#         # Si no hay dirección actual, no se mueve
-#         if not self.current_direction:
-#             return
+            if tentative_g_score < g_scores[neighbor]:
+                # This path to the neighbor is better than any previous one
+                parents[neighbor] = current_node
+                g_scores[neighbor] = tentative_g_score
 
-#         # Obtener los vecinos
-#         neighbors = self.get_neighbors()
+                # Calculate the heuristic (Euclidean distance)
+                h_score = euclidean_distance(neighbor, goal)
 
-#         # Identificar las celdas vecinas válidas con agentes Road y direcciones diferentes
-#         valid_moves = []
-#         for position, agents in neighbors.items():
-#             for agent in agents:
-#                 if isinstance(agent, Road) and agent.direction != self.current_direction:
-#                     valid_moves.append((position, agent.direction))
+                # Calculate the f_score (f = g + h)
+                f_score = tentative_g_score + h_score
 
-#         # Si no hay vecinos con direcciones diferentes, sigue en la misma dirección
-#         if not valid_moves:
-#             if self.current_direction == "Left":
-#                 next_position = (current_position[0] - 1, current_position[1])
-#             elif self.current_direction == "Right":
-#                 next_position = (current_position[0] + 1, current_position[1])
-#             elif self.current_direction == "Up":
-#                 next_position = (current_position[0], current_position[1] + 1)
-#             elif self.current_direction == "Down":
-#                 next_position = (current_position[0], current_position[1] - 1)
-#             else:
-#                 return  # Dirección inválida
-#         else:
-#             # Elegir aleatoriamente un movimiento válido (dirección diferente)
-#             chosen_move = random.choice(valid_moves)
-#             next_position, next_direction = chosen_move
-#             self.current_direction = next_direction
+                heapq.heappush(open_set, (f_score, neighbor))
 
-#         # Verificar si la celda está fuera del grid
-#         if self.model.grid.out_of_bounds(next_position):
-#             return
+    # If no path is found
+    return None
 
-#         # Obtener el contenido de la celda de destino
-#         next_cell = self.model.grid.get_cell_list_contents(next_position)
-#         traffic_light = next((agent for agent in next_cell if isinstance(agent, Traffic_Light)), None)
 
-#         # Si la celda de destino tiene un semáforo en rojo, no avanza
-#         if traffic_light and not traffic_light.state:
-#             return
+def euclidean_distance(point1, point2):
+    x1, y1 = point1
+    x2, y2 = point2
+    return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-#         # Mover el coche a la siguiente celda
-#         self.model.grid.move_agent(self, next_position)
 
-#     def step(self):
-#         """
-#         Determines the new direction it will take, and then moves.
-#         """
-#         self.move()
-#  
 
 class Traffic_Light(Agent):
     """
     Traffic light. Where the traffic lights are in the grid.
     """
-    def __init__(self, unique_id, model, state = False, timeToChange = 10):
+
+    def __init__(self, unique_id, model, state=False, timeToChange=10):
         super().__init__(unique_id, model)
         """
         Creates a new Traffic light.
@@ -227,41 +155,56 @@ class Traffic_Light(Agent):
             state: Whether the traffic light is green or red
             timeToChange: After how many step should the traffic light change color 
         """
+        self.unique_id = unique_id
         self.state = state
         self.timeToChange = timeToChange
 
+        # Get the edge position on edge with direction to the center.
+
     def step(self):
-        """ 
-        To change the state (green or red) of the traffic light in case you consider the time to change of each traffic light.
         """
-        if self.model.schedule.steps % self.timeToChange == 0:
+        Cambia el estado del semáforo en base al tráfico detectado.
+        """
+        traffic_count = self.model.count_traffic_around_light(self.pos)
+        
+        # Puedes ajustar estos valores según necesites
+        traffic_threshold_for_change = 4  # cambiar si hay 3 o más coches
+        time_threshold_for_change = 10  # cambiar cada 10 pasos
+        
+        if traffic_count >= traffic_threshold_for_change or self.model.schedule.steps % time_threshold_for_change == 0:
             self.state = not self.state
+
 
 class Destination(Agent):
     """
     Destination agent. Where each car should go.
     """
+
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
 
     def step(self):
         pass
+
 
 class Obstacle(Agent):
     """
     Obstacle agent. Just to add obstacles to the grid.
     """
+
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
 
     def step(self):
         pass
 
+
 class Road(Agent):
     """
     Road agent. Determines where the cars can move, and in which direction.
     """
-    def __init__(self, unique_id, model, direction= "Left"):
+
+    def __init__(self, unique_id, model, direction="Left"):
         """
         Creates a new road.
         Args:
