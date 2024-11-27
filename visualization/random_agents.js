@@ -319,7 +319,7 @@ function drawTraffic_Light(distance, trafficLightVao, carBufferInfo, trafficLigh
       //car.matrix = twgl.m4.scale(car.matrix, car_scale);
 
       let color;
-      if (trafficLight.state === "red"){
+      if (trafficLight.state === agent.state){
         color = [1,0,0,1];
       } else if (trafficLight.state === "green"){
         color = [1,1,0,1];
