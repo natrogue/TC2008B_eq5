@@ -40,14 +40,14 @@ def agent_portrayal(agent):
 width = 0
 height = 0
 
-with open("city_files/2023_base.txt") as baseFile:
+with open("city_files/2024_base.txt") as baseFile:
     lines = baseFile.readlines()
     width = len(lines[0]) - 1
     height = len(lines)
 
 model_params = {}
 
-grid = CanvasGrid(agent_portrayal, 25, 25, 500, 500)
+grid = CanvasGrid(agent_portrayal, 30, 30, 500, 500)
 server = ModularServer(CityModel, [grid], "City Traffic Simulation", model_params)
 server.port = 8521
 server.launch()
