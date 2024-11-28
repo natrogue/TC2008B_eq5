@@ -42,7 +42,12 @@ void main() {
 }
 `;
 class Object3D {
-    constructor(id, position=[0,0,0], rotation=[0,0,0], scale=[1,1,1]){
+    constructor(
+        id, 
+        position=[0,0,0], 
+        rotation=[0,0,0], 
+        scale=[1,1,1]
+    ) {
       this.id = id;
       this.position = position;
       this.rotation = rotation;
@@ -169,12 +174,13 @@ async function getCars() {
                     const currentCar = cars.find((object3d) => object3d.id === car.id);
                     if (currentCar !== undefined) {
                         currentCar.position = [car.x, car.y, car.z];
-                    } else {
-                        for (const car of result.positions) {
-                            const newCar = new Object3D(car.id, [car.x, car.y, car.z]);
-                            cars.push(newCar);
-                        }
-                    }
+                    } 
+                    // else {
+                    //     for (const car of result.positions) {
+                    //         const newCar = new Object3D(car.id, [car.x, car.y, car.z]);
+                    //         cars.push(newCar);
+                    //     }
+                    // }
                 }
             }
         }
@@ -231,7 +237,7 @@ async function getDestination() {
       let response = await fetch(agent_server_url + "getDestinations") 
       if(response.ok){
             let result = await response.json()
-        for (const destinations of result.positions) {
+        for (const destination of result.positions) {
             const newDestionation = new Object3D(destination.id, [destination.x, destination.y, destination.z])
             destinations.push(newDestionation)
             }
@@ -250,8 +256,6 @@ async function update() {
         await getCars();
         //await getDestination()
         await getTraffic_Light()
-
-
         await getBuilding();
         console.log("Updated cars")
       }
@@ -384,6 +388,7 @@ function drawDestinations(destinationVao, destinationBufferInfo, viewProjectionM
       // Set the uniforms for the obstacle
       let uniforms = {
           u_matrix: destination.matrix,
+          u_color: [1,1,1,1]
       }
 
       // Set the uniforms and draw the obstacle
