@@ -21,6 +21,7 @@ class Car(Agent):
         """
         super().__init__(unique_id, model)
         self.goal = goal
+        self.direction = "Up"
         self.color = f"#{''.join(choice('0123456789ABCDEF') for _ in range(6))}"
 
     def move(self):
@@ -31,7 +32,7 @@ class Car(Agent):
 
         path = aStar(self.model.graph, self.pos, self.goal)
 
-        if path == None:
+        if path is None:
             return
         if len(path) > 2:
             next_move = path[1]
@@ -44,8 +45,29 @@ class Car(Agent):
         next_move = self.checkNextMoveIsNotCar(next_move)
         next_move = self.checkTrafficLight(next_move)
         # Move the agent to next_move
-        self.model.grid.move_agent(self, next_move)
 
+        self.update_direction(next_move)
+        self.model.grid.move_agent(self, next_move)
+    
+    def update_direction(self, next_move):
+        dx = next_move[0] - self.pos[0]
+        dz = next_move[1] - self.pos[1]
+
+        if dx == 1 and dz == 0:
+            self.direction = "Right"
+        elif dx == -1 and dz == 0:
+            self.direction = "Left"
+        elif dx == 0 and dz == 1:
+            self.direction = "Up"
+        elif dx == 0 and dz == -1:
+            self.direction = "Down"
+        elif dx == 0 and dz == 0:
+            pass
+        else:
+            self.direction = "Diagonal"
+
+        print(f"Car {self.unique_id}: Moving from {self.pos} to {next_move}, Direction: {self.direction}")
+        
     def checkNextMoveIsNotCar(self, next_move):
         """
         Verifica si el próximo movimiento es hacia una posición ocupada por otro coche.
