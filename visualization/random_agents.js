@@ -61,12 +61,14 @@ const agent_server_url = "http://localhost:8585/";
 //const cars = [];
 let cars =[];
 const buildings = [];
+const roads =[];
 const destinations = [];
 const trafficLights = [];
 
 // Initialize WebGL-related variables
 let gl, programInfo, carArrays, carBufferInfo, carVao;
 let buildingArrays, buildingBufferInfo, buildingVao;
+let roadArrays, roadBufferInfo, roadVao;
 let destinationArrays, destinationBufferInfo, destinationVao;
 let trafficLightArrays, trafficLightBufferInfo, trafficLightVao;
 let texture = undefined;
@@ -91,6 +93,7 @@ async function main() {
     //agent data
     carArrays = dataGenerator.CreateCar();
     buildingArrays = dataGenerator.CreateBuilding();
+    //roadArrays = dataGenerator.CreateRoad();
     destinationArrays = dataGenerator.CreateDestination();
     trafficLightArrays = dataGenerator.CreateTrafficLight();
 
@@ -114,6 +117,7 @@ async function main() {
     await getCars();
     await getTraffic_Light();
     await getBuilding();
+    //await getRoad();
     await getDestination();
     await drawScene(gl, programInfo, carVao, carBufferInfo, buildingVao, buildingBufferInfo, destinationVao, destinationBufferInfo, trafficLightVao, trafficLightBufferInfo);
 }
@@ -170,14 +174,12 @@ async function getCars() {
         const receivedIds = result.positions.map((car) => car.id);// ids de los agentes
         cars = cars.filter((object3d) => receivedIds.includes(object3d.id));// Eliminar agentes 
   
-        // Agregar nuevos agentes o actualizar los existentes
-        for (const car of result.positions) {
+        
+        for (const car of result.positions) { // Agregar cars o actualizar 
           const existingCar = cars.find(
             (object3d) => object3d.id === car.id,
           );
-  
-          // Determinar la rotación según la dirección del agente
-          if (car.direction == "Up") {
+            if (car.direction == "Up") {
             rotation = [0, 0, 0];
           } else if (car.direction == "Down") {
             rotation = [0, Math.PI, 0];
@@ -190,26 +192,23 @@ async function getCars() {
           }
   
           if (!existingCar) {
-            // Crear un nuevo agente y agregarlo al array
+            // Crear un nuevo car
             const newCar = new Object3D(
               car.id, [car.x, car.y, car.z],
               rotation, [0.6, 0.8, 0.6]
-            );
+            ); //se agrega al array
             cars.push(newCar);
           } else {
-            // Actualizar la posición y rotación del agente existente
+            // actualiza la posición y rotación 
             existingCar.position = [car.x, car.y, car.z];
             existingCar.rotation = rotation;
           }
         }
-  
-        // Registrar el array de agentes actualizado
         console.log("Agents:", cars);
       } else {
         console.error("Failed to fetch agents:", response.statusText);
       }
     } catch (error) {
-      // Registrar cualquier error que ocurra durante la solicitud
       console.error("Error fetching agents:", error);
     }
   }
@@ -222,7 +221,7 @@ async function getTraffic_Light() {
             let result = await response.json();
             console.log(result.positions);
 
-            if (trafficLights.length === 0) { // Cambiado de agents a cars
+            if (trafficLights.length === 0) { 
                 for (const traffic_light of result.positions) {
                     const newtrafficLights = new Object3D(traffic_light.id, [traffic_light.x, traffic_light.y, traffic_light.z]);
                     trafficLights.push(newtrafficLights);
@@ -257,7 +256,35 @@ async function getBuilding() {
       console.log(error) 
     }
   }
+
+//   async function getRoad() {
+//     try {
+//       // Send a GET request to the agent server to retrieve the road positions
+//       let response = await fetch(agent_server_url + "getRoads");
   
+//       // Check if the response was successful
+//       if (response.ok) {
+//         // Parse the response as JSON
+//         let result = await response.json();
+  
+//         // Create new roads and add them to the roads array
+//         for (const road of result.positions) {
+//           const newRoad = new Object3D(
+//             road.id,
+//             [road.x, road.y, road.z],
+//             [0, 0, 0],
+//             [1, 0.2, 1],
+//           ); // Dark gray color
+//           roads.push(newRoad);
+//         }
+//         // Log the roads array
+//         console.log("Roads:", roads);
+//       }
+//     } catch (error) {
+//       // Log any errors that occur during the request
+//       console.log(error);
+//     }
+//   }
 async function getDestination() {
     try {
       let response = await fetch(agent_server_url + "getDestinations") 
@@ -267,7 +294,7 @@ async function getDestination() {
             const newDestionation = new Object3D(destination.id, [destination.x, destination.y, destination.z])
             destinations.push(newDestionation)
             }
-        console.log("building:", buildings)
+        console.log("destination:", destinations)
       }
     } catch (error) {
       console.log(error) 
@@ -283,6 +310,7 @@ async function update() {
         //await getDestination()
         await getTraffic_Light()
         await getBuilding();
+        //await getRoad();
         console.log("Updated cars")
       }
   
@@ -303,6 +331,7 @@ async function drawScene(gl, programInfo, carVao, carBufferInfo) {
     drawCars(1, carVao, carBufferInfo, viewProjectionMatrix);
     drawTraffic_Light(1, trafficLightVao, trafficLightBufferInfo, viewProjectionMatrix);
     drawBuildings(buildingVao, buildingBufferInfo, viewProjectionMatrix);
+    drawRoads(roadVao, roadBufferInfo, viewProjectionMatrix);
     drawDestinations(destinationVao, destinationBufferInfo, viewProjectionMatrix);
 
 
@@ -390,6 +419,36 @@ function drawBuildings(buildingVao, buildingBufferInfo, viewProjectionMatrix){
       // Set the uniforms and draw the obstacle
       twgl.setUniforms(programInfo, uniforms);
       twgl.drawBufferInfo(gl, buildingBufferInfo);
+      
+    }
+}
+
+function drawRoads(roadVao, roadBufferInfo, viewProjectionMatrix){
+    // Bind the vertex array object for obstacles
+    gl.bindVertexArray(roadVao);
+
+    // Iterate over the obstacles
+    for(const road of roads){
+      // Create the obstacle's transformation matrix
+      const cube_trans = twgl.v3.create(...road.position);
+      const cube_scale = twgl.v3.create(...road.scale);
+
+      // Calculate the obstacle's matrix
+      road.matrix = twgl.m4.translate(viewProjectionMatrix, cube_trans);
+      road.matrix = twgl.m4.rotateX(road.matrix, road.rotation[0]);
+      road.matrix = twgl.m4.rotateY(road.matrix, road.rotation[1]);
+      road.matrix = twgl.m4.rotateZ(road.matrix, road.rotation[2]);
+      //building.matrix = twgl.m4.scale(obstacle.matrix, cube_scale);
+
+      // Set the uniforms for the obstacle
+      let uniforms = {
+          u_matrix: road.matrix,
+          u_color: [1,1,0,1]
+      }
+
+      // Set the uniforms and draw the obstacle
+      twgl.setUniforms(programInfo, uniforms);
+      twgl.drawBufferInfo(gl, roadBufferInfo);
       
     }
 }
