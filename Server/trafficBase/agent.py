@@ -178,7 +178,7 @@ class Traffic_Light(Agent):
             timeToChange: After how many step should the traffic light change color 
         """
         self.unique_id = unique_id
-        self.state = "red"
+        self.state = state
         self.timeToChange = timeToChange
 
         # Get the edge position on edge with direction to the center.
@@ -187,15 +187,9 @@ class Traffic_Light(Agent):
         """
         Cambia el estado del semáforo en base al tráfico detectado.
         """
-
-        if self.state == "red":
-            self.state = "green"
-        else:
-            self.state = "red"
             
         traffic_count = self.model.count_traffic_around_light(self.pos)
         
-        # Puedes ajustar estos valores según necesites
         traffic_threshold_for_change = 4  # cambiar si hay 3 o más coches
         time_threshold_for_change = 10  # cambiar cada 10 pasos
         

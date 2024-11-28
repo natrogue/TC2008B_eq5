@@ -39,7 +39,7 @@ def getAgents():
 
     if request.method == 'GET':
         agentPositions = [
-            {"id": str(agent.unique_id), "x": x, "y":1, "z":z}
+            {"id": str(agent.unique_id), "x": x, "y":1, "z":z, "direction": agent.direction}
             for agents, (x, z) in city_model.grid.coord_iter()
             for agent in agents
             if isinstance(agent, Car)
@@ -54,7 +54,7 @@ def getTraffic_Light():
 
     if request.method == 'GET':
         agentPositions = [
-            {"id": str(agent.unique_id), "x": x, "y":1, "z":z}
+            {"id": str(agent.unique_id), "x": x, "y":1, "z":z, "state": agent.state}
             for agents, (x, z) in city_model.grid.coord_iter()
             for agent in agents
             if isinstance(agent, Traffic_Light)

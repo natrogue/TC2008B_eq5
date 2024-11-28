@@ -168,7 +168,7 @@ async function getCars() {
             rotation = [0, 0, 0];
           }
 
-          console.log(`Car ID: ${car.id}, Rotation: ${rotation}`);
+          console.log(`Car ID: ${car.id}, Direction: ${car.direction}`);
   
           if (!existingCar) {
             // Crear un nuevo car
@@ -211,6 +211,7 @@ async function getTraffic_Light() {
                 for (const trafficLight of result.positions) {
                     const currentTrafficLight = trafficLights.find((object3d) => object3d.id === trafficLight.id);
                     if (currentTrafficLight !== undefined) {
+                        currentTrafficLight.state = trafficLight.state;
                         currentTrafficLight.position = [trafficLight.x, trafficLight.y, trafficLight.z];
                     }
                 }
@@ -363,10 +364,18 @@ function drawTraffic_Light(distance, trafficLightVao, carBufferInfo, viewProject
       trafficLight.matrix = twgl.m4.rotateZ(trafficLight.matrix, trafficLight.rotation[2]);
       //car.matrix = twgl.m4.scale(car.matrix, car_scale);
 
+      if (trafficLight.state == true) {
+        trafficLight.color = [1.0,0.0,0.0,1.0];
+      } else if (trafficLight.state == false) {
+        trafficLight.color = [0.0,1.0,0.0,1.0];
+      }
+      console.log(trafficLight.color);
+      console.log(trafficLight.state);
+
       // Set the uniforms for the agent
       let uniforms = {
           u_matrix: trafficLight.matrix,
-          u_color: [0,0,1,1]
+          u_color: trafficLight.color
       }
 
       // Set the uniforms and draw the agent
