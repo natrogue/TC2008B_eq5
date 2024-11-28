@@ -130,7 +130,7 @@ async function initAgentsModel() {
       console.log(result.message)
     }
 
-      
+
   } catch (error) {
     // Log any errors that occur during the request
     console.log(error)    
@@ -183,7 +183,7 @@ async function getTraffic_Light() {
         let response = await fetch(agent_server_url + "getTraffic_Light");
         if (response.ok) {
             let result = await response.json();
-            console.log(result.positions);
+            console.log("Traffic light data received", result.positions);
 
             if (trafficLights.length === 0) { // Cambiado de agents a cars
                 for (const traffic_light of result.positions) {
@@ -194,7 +194,7 @@ async function getTraffic_Light() {
                 console.log("trafficLights:", trafficLights);
             } else {
                 for (const trafficLight of result.positions) {
-                    const currenttrafficLight = cars.find((object3d) => object3d.id === trafficLight.id);
+                    const currenttrafficLight = trafficLights.find((object3d) => object3d.id === trafficLight.id);
                     if (currenttrafficLight !== undefined) {
                         currenttrafficLight.position = [trafficLight.x, trafficLight.y, trafficLight.z];
                         currenttrafficLight.state = trafficLight.state;
@@ -238,14 +238,14 @@ async function getDestination() {
       console.log(error) 
     }
   }
-  
+
 
 async function update() {
     try {
       let response = await fetch(agent_server_url + "update") 
       if(response.ok){
         await getCars();
-        //await getDestination()
+        await getDestination()
         await getTraffic_Light()
 
 
@@ -319,7 +319,7 @@ function drawTraffic_Light(distance, trafficLightVao, carBufferInfo, trafficLigh
       //car.matrix = twgl.m4.scale(car.matrix, car_scale);
 
       let color;
-      if (trafficLight.state === agent.state){
+      if (trafficLight.state === "red"){
         color = [1,0,0,1];
       } else if (trafficLight.state === "green"){
         color = [1,1,0,1];
