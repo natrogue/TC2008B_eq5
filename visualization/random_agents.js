@@ -5,41 +5,9 @@ import GUI from 'lil-gui';
 import *  as dataGenerator from './dataGenerator' 
 //import {CreateTrafficLight, CreateCar} from './dataGenerator.js';
 
-const vsGLSL = `#version 300 es
-in vec4 a_position;
-in vec4 a_color;
-uniform vec4 u_color;
-in vec2 a_texCoord;
+import vsGLSL from "./assets/shaders/vs_phong_301.glsl?raw";
+import fsGLSL from "./assets/shaders/fs_phong_301.glsl?raw";
 
-uniform mat4 u_matrix;
-out vec4 v_color;
-out vec2 v_texCoord;
-
-void main() {
-    gl_Position = u_matrix * a_position; // Transform position to clip space
-    v_color = u_color;                  // Pass color to fragment shader
-    v_texCoord = a_texCoord;
-
-}
-`;
-
-// Fragment shader: Outputs flat colors without lighting
-const fsGLSL = `#version 300 es
-precision highp float;
-
-in vec4 v_color;
-out vec4 outColor;
-
-in vec2 v_texCoord;
-
-uniform sampler2D u_texture;
-
-void main() {
-    outColor = v_color; // Use the vertex color directly
-    //outColor = texture(u_texture, v_texCoord);
-
-}
-`;
 class Object3D {
     constructor(
         id, 
