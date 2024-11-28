@@ -311,7 +311,14 @@ class CityModel(Model):
                 cell_content = cell[0]
                 count += sum(isinstance(agent, Car) for agent in cell_content)
             return count
-
+    def get_statistics(self):
+        """
+        Retorna estadísticas de la simulación.
+        """
+        return {
+        "step": self.step_count,
+        "cars_in_grid": self.count_cars_in_grid()
+    }
     def step(self):
         """Advance the model by one step."""
         if self.step_count % 3 == 0:
