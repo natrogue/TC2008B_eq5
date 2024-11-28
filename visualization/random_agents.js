@@ -8,6 +8,12 @@ import *  as dataGenerator from './dataGenerator'
 import vsGLSL from "./assets/shaders/vs_phong_301.glsl?raw";
 import fsGLSL from "./assets/shaders/fs_phong_301.glsl?raw";
 
+const settings = {
+  cameraPosition: { x: -5.5, y: 16.9, z:-26.9 },
+  lightPosition: { x: 0, y: 10, z: 0 },
+
+}
+
 class Object3D {
     constructor(
         id, 
@@ -155,9 +161,14 @@ async function getCars() {
             rotation = [0, -Math.PI / 2, 0];
           } else if (car.direction == "Right") {
             rotation = [0, Math.PI / 2, 0];
-          } else {
+          } else if (car.direction =="Diagonal"){
+            rotation = [0, Math.PI / 4, 0];
+          }
+           else {
             rotation = [0, 0, 0];
           }
+
+          console.log(`Car ID: ${car.id}, Rotation: ${rotation}`);
   
           if (!existingCar) {
             // Crear un nuevo car
@@ -166,6 +177,7 @@ async function getCars() {
               rotation, [0.6, 0.8, 0.6]
             ); //se agrega al array
             cars.push(newCar);
+            newCar.color = [Math.random(), Math.random(), Math.random(), 1];
           } else {
             // actualiza la posición y rotación 
             existingCar.position = [car.x, car.y, car.z];
@@ -324,15 +336,18 @@ function drawCars(distance, carVao, carBufferInfo, viewProjectionMatrix){
       car.matrix = twgl.m4.rotateY(car.matrix, car.rotation[1]);
       car.matrix = twgl.m4.rotateZ(car.matrix, car.rotation[2]);
       //car.matrix = twgl.m4.scale(car.matrix, car_scale);
+
+      console.log(`Drawing Car ID: ${car.id}, Position: ${car.position}, Rotation: ${car.rotation}`);
       // Set the uniforms for the agent
       let uniforms = {
           u_matrix: car.matrix,
-          u_color: [1,0,0,1]
+          u_color: car.color
       }
       // Set the uniforms and draw the agent
       twgl.setUniforms(programInfo, uniforms);
       twgl.drawBufferInfo(gl, carBufferInfo);
     }
+    
     }
 
 function drawTraffic_Light(distance, trafficLightVao, carBufferInfo, viewProjectionMatrix){
@@ -381,7 +396,7 @@ function drawBuildings(buildingVao, buildingBufferInfo, viewProjectionMatrix){
       // Set the uniforms for the obstacle
       let uniforms = {
           u_matrix: building.matrix,
-          u_color: [1,1,0,1]
+          u_color: [0.5, 0.5, 0.5, 1]
       }
 
       // Set the uniforms and draw the obstacle

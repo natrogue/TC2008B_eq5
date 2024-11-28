@@ -28,6 +28,8 @@ def initModel():
         print("CityModel inicializado correctamente.")
 
         return jsonify({"message": "Default parameters recieved, model initiated."})
+    
+
 
 
 @app.route("/getCars", methods=['GET'])
