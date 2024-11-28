@@ -44,6 +44,7 @@ class CityModel(Model):
         self.step_count = 0
         self.agent_count = 0
         self.destinations = []
+        self.cars_reached_destination = 0
         # Load the map file. The map file is a text file where each character represents an agent.
         with open("city_files/2024_base.txt") as baseFile:
             lines = baseFile.readlines()
@@ -311,13 +312,23 @@ class CityModel(Model):
                 cell_content = cell[0]
                 count += sum(isinstance(agent, Car) for agent in cell_content)
             return count
+    
+    def car_reached_destination(self, car):
+        """
+        Handle the event of a car reaching its destination.
+        """
+        self.grid.remove_agent(car)
+        self.schedule.remove(car)
+        self.cars_reached_destination += 1
+
     def get_statistics(self):
         """
         Retorna estadísticas de la simulación.
         """
         return {
         "step": self.step_count,
-        "cars_in_grid": self.count_cars_in_grid()
+        "cars_in_grid": self.count_cars_in_grid(),
+        "cars_reached_destination": self.cars_reached_destination,
     }
     def step(self):
         """Advance the model by one step."""
@@ -334,7 +345,9 @@ class CityModel(Model):
 
         # Contar coches en el grid
         cars_in_grid = self.count_cars_in_grid()
-        print(f"Step: {self.step_count}, Cars in Grid: {cars_in_grid}")
+        #print(f"Step: {self.step_count}, Cars in Grid: {cars_in_grid}")
+        print(f"Step: {self.step_count}, Cars in Grid: {cars_in_grid}, Cars Reached: {self.cars_reached_destination}")
+
 
         self.step_count += 1
         self.schedule.step()

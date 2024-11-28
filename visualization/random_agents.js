@@ -500,6 +500,26 @@ function setupWorldView(gl) {
     return viewProjectionMatrix;
 }
 
+async function fetchStatistics() {
+  try {
+      const response = await fetch("http://localhost:8585/statistics");
+      if (response.ok) {
+          const data = await response.json();
+          updateStatisticsDisplay(data);
+      } else {
+          console.error("Failed to fetch statistics:", response.statusText);
+      }
+  } catch (error) {
+      console.error("Error fetching statistics:", error);
+  }
+}
+
+function updateStatisticsDisplay(stats) {
+  // Actualiza los elementos del DOM con las estadísticas
+  document.getElementById("step-count").innerText = stats.step;
+  document.getElementById("cars-in-grid").innerText = stats.cars_in_grid;
+  document.getElementById("cars-reached").innerText = stats.cars_reached_destination;
+}
 
 
 function setupUI() {
