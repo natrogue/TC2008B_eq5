@@ -5,7 +5,6 @@ import GUI from 'lil-gui';
 import *  as dataGenerator from './dataGenerator' 
 //import {CreateTrafficLight, CreateCar} from './dataGenerator.js';
 
-
 const vsGLSL = `#version 300 es
 in vec4 a_position;
 in vec4 a_color;
@@ -59,7 +58,8 @@ class Object3D {
 const agent_server_url = "http://localhost:8585/";
 
 // Initialize arrays to store car
-const cars = [];
+//const cars = [];
+let cars =[];
 const buildings = [];
 const destinations = [];
 const trafficLights = [];
@@ -71,7 +71,7 @@ let destinationArrays, destinationBufferInfo, destinationVao;
 let trafficLightArrays, trafficLightBufferInfo, trafficLightVao;
 let texture = undefined;
 
-let cameraPosition = { x: 0, y: 20, z:0 };
+let cameraPosition = { x: -5.5, y: 16.9, z:-26.9 };
 
 let frameCount = 0;
 
@@ -156,38 +156,64 @@ async function fetchMapLayout() {
     }
 }
 
+
 async function getCars() {
     try {
-        let response = await fetch(agent_server_url + "getCars");
-        if (response.ok) {
-            let result = await response.json();
-            console.log(result.positions);
-
-            if (cars.length === 0) { // Cambiado de agents a cars
-                for (const car of result.positions) {
-                    const newCar = new Object3D(car.id, [car.x, car.y, car.z]);
-                    cars.push(newCar);
-                }
-                console.log("Cars:", cars);
-            } else {
-                for (const car of result.positions) {
-                    const currentCar = cars.find((object3d) => object3d.id === car.id);
-                    if (currentCar !== undefined) {
-                        currentCar.position = [car.x, car.y, car.z];
-                    } 
-                    // else {
-                    //     for (const car of result.positions) {
-                    //         const newCar = new Object3D(car.id, [car.x, car.y, car.z]);
-                    //         cars.push(newCar);
-                    //     }
-                    // }
-                }
-            }
+      // Enviar una solicitud GET al servidor de agentes para obtener las posiciones
+      let response = await fetch(agent_server_url + "getCars");
+      let rotation = [0, 0, 0];
+      
+      if (response.ok) { // Verificar si la respuesta fue exitosa
+        let result = await response.json();// Analizar la respuesta como JSON
+        console.log(result.positions);// Registrar las posiciones de los agentes
+        
+        const receivedIds = result.positions.map((car) => car.id);// ids de los agentes
+        cars = cars.filter((object3d) => receivedIds.includes(object3d.id));// Eliminar agentes 
+  
+        // Agregar nuevos agentes o actualizar los existentes
+        for (const car of result.positions) {
+          const existingCar = cars.find(
+            (object3d) => object3d.id === car.id,
+          );
+  
+          // Determinar la rotación según la dirección del agente
+          if (car.direction == "Up") {
+            rotation = [0, 0, 0];
+          } else if (car.direction == "Down") {
+            rotation = [0, Math.PI, 0];
+          } else if (car.direction == "Left") {
+            rotation = [0, -Math.PI / 2, 0];
+          } else if (car.direction == "Right") {
+            rotation = [0, Math.PI / 2, 0];
+          } else {
+            rotation = [0, 0, 0];
+          }
+  
+          if (!existingCar) {
+            // Crear un nuevo agente y agregarlo al array
+            const newCar = new Object3D(
+              car.id, [car.x, car.y, car.z],
+              rotation, [0.6, 0.8, 0.6]
+            );
+            cars.push(newCar);
+          } else {
+            // Actualizar la posición y rotación del agente existente
+            existingCar.position = [car.x, car.y, car.z];
+            existingCar.rotation = rotation;
+          }
         }
+  
+        // Registrar el array de agentes actualizado
+        console.log("Agents:", cars);
+      } else {
+        console.error("Failed to fetch agents:", response.statusText);
+      }
     } catch (error) {
-        console.log(error);
+      // Registrar cualquier error que ocurra durante la solicitud
+      console.error("Error fetching agents:", error);
     }
-}
+  }
+  
 
 async function getTraffic_Light() {
     try {
@@ -408,7 +434,11 @@ function setupWorldView(gl) {
     const up = [0, 1, 0];// Set the up vector
 
     // Calculate the camera position
-    const camPos = twgl.v3.create(cameraPosition.x + data.width/2, cameraPosition.y, cameraPosition.z+data.height/2)
+    const camPos = twgl.v3.create(
+        cameraPosition.x + data.width/2, 
+        cameraPosition.y, 
+        cameraPosition.z+data.height/2
+    );
     // Create the camera matrix
     const cameraMatrix = twgl.m4.lookAt(camPos, target, up);
     // Calculate the view matrix
@@ -418,6 +448,8 @@ function setupWorldView(gl) {
 
     return viewProjectionMatrix;
 }
+
+
 
 function setupUI() {
     const gui = new GUI();
