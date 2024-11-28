@@ -5,6 +5,12 @@ from agent import *
 import json
 import random
 
+import requests
+import json
+
+url = "http://10.49.12.55:5000/api/"
+endpoint = "validate_attempt"
+
 
 class CityModel(Model):
     """
@@ -314,5 +320,18 @@ class CityModel(Model):
                 self.grid.place_agent(car, spawn_positions[i])
                 self.schedule.add(car)
 
+        data = {
+    "year" : 2024,
+    "classroom" : 301,
+    "name" : "John Doe y compañía",
+    "current_cars": 50,
+    "total_arrived": 10
+    }
+        headers = {
+            "Content-Type": "application/json"
+            }
+        response = requests.post(url+endpoint, data=json.dumps(data), headers=headers)
+        print("Request " + "successful" if response.status_code == 200 else "failed", "Status code:", response.status_code)
+        print("Response:", response.json())
         self.step_count += 1
         self.schedule.step()
