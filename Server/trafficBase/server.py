@@ -108,8 +108,19 @@ def updateModel():
                 "currentStep": currentStep,
             }
         )
+@app.route("/statistics", methods=["GET"])
+@cross_origin()
+def getStatistics():
+    """
+    Endpoint para devolver las estadísticas del modelo.
+    """
+    global city_model
 
+    if city_model is None:
+        return jsonify({"error": "Model is not initialized."}), 400
 
+    stats = city_model.get_statistics()
+    return jsonify(stats)
 if __name__ == '__main__':
     # Run the Flask app on port 8585
     app.run(host="localhost", port=8585, debug=True)

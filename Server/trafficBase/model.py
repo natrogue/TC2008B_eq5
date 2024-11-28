@@ -302,6 +302,23 @@ class CityModel(Model):
                     self.graph[neighbor].append(destiny)
                     self.graph[destiny] = []
 
+    def count_cars_in_grid(self):
+            """
+            Cuenta la cantidad de agentes Car en el grid.
+            """ 
+            count = 0
+            for cell in self.grid.coord_iter():
+                cell_content = cell[0]
+                count += sum(isinstance(agent, Car) for agent in cell_content)
+            return count
+    def get_statistics(self):
+        """
+        Retorna estadísticas de la simulación.
+        """
+        return {
+        "step": self.step_count,
+        "cars_in_grid": self.count_cars_in_grid()
+    }
     def step(self):
         """Advance the model by one step."""
         if self.step_count % 3 == 0:
@@ -313,6 +330,11 @@ class CityModel(Model):
                 self.agent_count += 1
                 self.grid.place_agent(car, spawn_positions[i])
                 self.schedule.add(car)
+
+
+        # Contar coches en el grid
+        cars_in_grid = self.count_cars_in_grid()
+        print(f"Step: {self.step_count}, Cars in Grid: {cars_in_grid}")
 
         self.step_count += 1
         self.schedule.step()
