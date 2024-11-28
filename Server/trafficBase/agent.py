@@ -34,12 +34,16 @@ class Car(Agent):
 
         if path is None:
             return
-        if len(path) > 2:
-            next_move = path[1]
-        else:
-            self.model.grid.remove_agent(self)
-            self.model.schedule.remove(self)
+        path = aStar(self.model.graph, self.pos, self.goal)
+        if not path or len(path) < 2:
+            # Car has reached its destination
+            self.model.car_reached_destination(self)
             return
+        next_move = path[1]
+        # else:
+        #     self.model.grid.remove_agent(self)
+        #     self.model.schedule.remove(self)
+        #     return
 
         # Check if the next move is a traffic light
         next_move = self.checkNextMoveIsNotCar(next_move)
